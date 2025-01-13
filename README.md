@@ -73,7 +73,7 @@ imgdiet --source ./images/image.png --target ./compressed_images/ --psnr 40.0
 
 **Compress all images in a directory:**
 ```bash
-imgdiet --source ./images --target ./compressed_images --psnr 35.0 --verbose
+imgdiet --source ./images --target ./compressed_images --psnr 40.0 --verbose
 ```
 
 ### Python API
@@ -103,7 +103,7 @@ save(
 save(
     source="./images",
     target="./compressed_images",
-    target_psnr=35.0,
+    target_psnr=40.0,
     verbose=False
 )
 ```
