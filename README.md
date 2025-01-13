@@ -163,3 +163,6 @@ This project is licensed under the MIT License. See the [LICENSE](./LICENSE) fil
 
 Enjoy compressing your images efficiently with `imgdiet`!
 
+## Acknowledgements
+
+This project was developed with assistance from advanced AI tools 🤖, including ChatGPT, Claude 3.5 Sonnet, and Cursor AI, which provided guidance and feedback throughout the process.
