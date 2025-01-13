@@ -27,7 +27,7 @@ def setup_logger(verbose: bool) -> logging.Logger:
         
     # 새로운 logger 설정
     handler = logging.StreamHandler()
-    formatter = logging.Formatter('%(message)s')
+    formatter = logging.Formatter('[imgdiet] %(message)s')
     handler.setFormatter(formatter)
     logger.addHandler(handler)
     logger.setLevel(logging.INFO if verbose else logging.WARNING)
@@ -263,6 +263,7 @@ def process_single_image(
                 logger.info(f"Saved: {saving_ratio:.1f}%")
                 return webp_path
             else:
+                logger.warnning(f"img {img_path} was not compressed by lossless mode.")
                 logger.warning(f"Lossless compression failed: output is not identical or larger")
                 logger.warning(f"Original size: {original_size:,} bytes")
                 logger.warning(f"Lossless WebP size: {compressed_size:,} bytes")
@@ -300,6 +301,7 @@ def process_single_image(
             logger.info(f"Saved: {saving_ratio:.1f}%")
             return webp_path
         else:
+            logger.warning(f"img {img_path} was not compressed by quality mode.")
             logger.warning(f"Compressed >= original, copying original.")
             logger.warning(f"Original size: {original_size:,} bytes")
             logger.warning(f"Compressed size: {compressed_size:,} bytes")

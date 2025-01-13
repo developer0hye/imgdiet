@@ -1,6 +1,6 @@
 [project]
 name = "imgdiet"
-version = "0.9.3"
+version = "1.0.0"
 description = "A Python package for minimizing file size of images with minimal quality loss"
 readme = {file = "README.md", content-type = "text/markdown"}
 authors = [ { name="Yonghye Kwon", email="developer.0hye@gmail.com" } ]
