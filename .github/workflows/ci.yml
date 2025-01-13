@@ -1,0 +1,133 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.11"
+        
+    - name: Install package
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e .
+        pip install numpy Pillow
+        
+    - name: API Functional test
+      run: |
+        # 테스트 디렉토리 생성
+        mkdir -p test_output
+        
+        # API 테스트 실행
+        python -c '
+        from pathlib import Path
+        from imgdiet import save
+        import os
+        import numpy as np
+        from PIL import Image
+        
+        def get_np_array(img_path):
+            return np.array(Image.open(img_path))
+        
+        # 입력 이미지와 출력 경로 설정
+        source = Path("assets/20250105_164724.png")
+        target = Path("test_output/output.webp")
+        target_psnr = 40.0
+        
+        # 이미지 변환
+        save(source, target, target_psnr=target_psnr)
+        
+        # 파일 크기 검증
+        source_size = os.path.getsize(source)
+        target_size = os.path.getsize(target)
+        
+        print(f"Source size: {source_size:,} bytes")
+        print(f"Target size: {target_size:,} bytes")
+        print(f"Size reduction: {(1 - target_size/source_size)*100:.1f}%")
+        
+        assert target_size < source_size, "Compressed file should be smaller"
+        assert target.exists(), "Output file should exist"
+        
+        # PSNR 체크
+        # WebP를 PNG로 임시 변환
+        temp_png = "test_output/temp.png"
+        Image.open(target).save(temp_png)
+        
+        # PSNR 계산
+        original = get_np_array(source)
+        converted = get_np_array(temp_png)
+        mse = np.mean((original - converted) ** 2)
+        psnr = 20 * np.log10(255.0 / np.sqrt(mse))
+        
+        print(f"PSNR: {psnr:.1f} dB")
+        assert psnr >= target_psnr, f"PSNR ({psnr:.1f} dB) should be >= target ({target_psnr} dB)"
+        
+        # 테스트 통과 메시지
+        print("\n✅ API Test passed!")
+        print(f"- File size reduced by {(1 - target_size/source_size)*100:.1f}%")
+        print(f"- PSNR: {psnr:.1f} dB (target: {target_psnr} dB)")
+        '
+
+    - name: CLI Functional test
+      run: |
+        # CLI 테스트를 위한 새 디렉토리 생성
+        rm -rf test_output
+        mkdir -p test_output
+        
+        # CLI로 이미지 변환 실행
+        imgdiet --source assets/20250105_164724.png --target test_output/output.webp --psnr 40.0
+        
+        # 결과 검증
+        python -c '
+        from pathlib import Path
+        import os
+        import numpy as np
+        from PIL import Image
+        
+        def get_np_array(img_path):
+            return np.array(Image.open(img_path))
+        
+        source = Path("assets/20250105_164724.png")
+        target = Path("test_output/output.webp")
+        target_psnr = 40.0
+        
+        # 파일 존재 확인
+        assert target.exists(), "CLI: Output file should exist"
+        
+        # 파일 크기 검증
+        source_size = os.path.getsize(source)
+        target_size = os.path.getsize(target)
+        
+        print(f"CLI - Source size: {source_size:,} bytes")
+        print(f"CLI - Target size: {target_size:,} bytes")
+        print(f"CLI - Size reduction: {(1 - target_size/source_size)*100:.1f}%")
+        
+        assert target_size < source_size, "CLI: Compressed file should be smaller"
+        
+        # PSNR 체크
+        temp_png = "test_output/temp_cli.png"
+        Image.open(target).save(temp_png)
+        
+        original = get_np_array(source)
+        converted = get_np_array(temp_png)
+        mse = np.mean((original - converted) ** 2)
+        psnr = 20 * np.log10(255.0 / np.sqrt(mse))
+        
+        print(f"CLI - PSNR: {psnr:.1f} dB")
+        assert psnr >= target_psnr, f"CLI: PSNR ({psnr:.1f} dB) should be >= target ({target_psnr} dB)"
+        
+        # 테스트 통과 메시지
+        print("\n✅ CLI Test passed!")
+        print(f"- File size reduced by {(1 - target_size/source_size)*100:.1f}%")
+        print(f"- PSNR: {psnr:.1f} dB (target: {target_psnr} dB)")
+        ' 

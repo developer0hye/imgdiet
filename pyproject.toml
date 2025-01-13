@@ -1,0 +1,20 @@
+[project]
+name = "imgdiet"
+version = "0.9.1"
+description = "A Python package for minimizing file size of images with minimal quality loss"
+readme = {file = "README.md", content-type = "text/markdown"}
+authors = [ { name="Yonghye Kwon", email="developer.0hye@gmail.com" } ]
+license = { file = "LICENSE" }
+dependencies = [
+  "numpy",
+  "Pillow",
+  "tqdm"
+]
+keywords = ["image", "compression", "webp", "psnr"]
+
+[tool.setuptools.packages.find]
+include = ["imgdiet*"]
+exclude = ["assets*"]
+
+[project.scripts]
+imgdiet = "imgdiet.cli:main"
