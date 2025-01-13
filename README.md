@@ -1,6 +1,6 @@
 # `imgdiet`
 
-**A Python package for minimizing file size of images with minimal quality loss**
+**A Python package for minimizing file size of images with negligible quality loss**
 
 | PNG Image                                   | WEBP Image (Optimized by `imgdiet`)                                  |
 |--------------------------------------------|--------------------------------------------|
