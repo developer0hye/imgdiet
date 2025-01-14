@@ -2,19 +2,19 @@
 
 **A Python package for minimizing file size of images with negligible quality loss**
 
-| PNG Image                                   | WEBP Image (Optimized by `imgdiet`)                                  |
+| PNG Image                                   | WebP Image (Optimized by `imgdiet`)                                  |
 |--------------------------------------------|--------------------------------------------|
-| <img src="./assets/20250105_164724.png" alt="PNG Image" width="300"> | <img src="./assets/20250105_164724.webp" alt="WEBP Image" width="300"> |
+| <img src="./assets/20250105_164724.png" alt="PNG Image" width="300"> | <img src="./assets/20250105_164724.webp" alt="WebP Image" width="300"> |
 | File Size: 26.9 MB                     | File Size : 4.1 MB, Target PSNR: 40 dB |
 
-| JPG Image                                   | WEBP Image (Optimized by `imgdiet`)                                  |
+| JPG Image                                   | WebP Image (Optimized by `imgdiet`)                                  |
 |--------------------------------------------|--------------------------------------------|
-| <img src="./assets/xp.jpg" alt="PNG Image" width="300"> | <img src="./assets/xp.webp" alt="WEBP Image" width="300"> |
+| <img src="./assets/xp.jpg" alt="PNG Image" width="300"> | <img src="./assets/xp.webp" alt="WebP Image" width="300"> |
 | File Size: 1.5 MB                     | File Size : 0.3 MB, Target PSNR: 40 dB |
 
-| JPG Image                                   | WEBP Image (Optimized by `imgdiet`)                                  |
+| JPG Image                                   | WebP Image (Optimized by `imgdiet`)                                  |
 |--------------------------------------------|--------------------------------------------|
-| <img src="./assets/pexels-wildlittlethingsphoto-1388069.jpg" alt="PNG Image" width="300"> | <img src="./assets/pexels-wildlittlethingsphoto-1388069.webp" alt="WEBP Image" width="300"> |
+| <img src="./assets/pexels-wildlittlethingsphoto-1388069.jpg" alt="PNG Image" width="300"> | <img src="./assets/pexels-wildlittlethingsphoto-1388069.webp" alt="WebP Image" width="300"> |
 | File Size: 2.4 MB                     | File Size : 1.9 MB, Target PSNR: 38 dB |
 
 ## Installation
