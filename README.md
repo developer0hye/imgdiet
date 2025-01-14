@@ -82,30 +82,37 @@ You can also use `imgdiet` programmatically in your Python projects:
 
 ```python
 from imgdiet import save
+from pathlib import Path
 
 # Compress a single image
-save(
+source_paths, target_paths = save(
     source="image.png",
     target="compressed_image.webp",
     target_psnr=40.0,
     verbose=True
 )
+# Returns: ([Path('image.png')], [Path('compressed_image.webp')])
 
-# Compress a single image and save a compressed version in a directory
-save(
+# Compress a single image and save in a directory
+source_paths, target_paths = save(
     source="./images/image.png",
     target="./compressed_images/",
     target_psnr=40.0,
     verbose=True
 )
+# Returns: ([Path('images/image.png')], [Path('compressed_images/image.webp')])
 
 # Compress all images in a directory
-save(
+source_paths, target_paths = save(
     source="./images",
     target="./compressed_images",
     target_psnr=40.0,
     verbose=False
 )
+# Returns: (
+#     [Path('images/img1.jpg'), Path('images/img2.png'), ...],
+#     [Path('compressed_images/img1.webp'), Path('compressed_images/img2.webp'), ...]
+# )
 ```
 
 ## How It Works
