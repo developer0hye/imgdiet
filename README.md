@@ -56,7 +56,7 @@ imgdiet --source <input_path> --target <output_path> [--psnr <value>] [--verbose
 
 - `--source`: Path to an image or a directory containing images.
 - `--target`: Path to the output directory or a single WebP file.
-- `--psnr`: Target Peak Signal-to-Noise Ratio (default: 40.0). Use `0` for lossless compression.
+- `--psnr`: Target Peak Signal-to-Noise Ratio (default: 40.0). Use `0` for lossless compression. Higher values mean better quality but larger file size.
 - `--verbose`: Enable detailed logging for the process.
 
 #### Examples:
