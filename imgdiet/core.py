@@ -353,7 +353,8 @@ def save(
                 saved_path = process_single_image(src_path, src_path, dst_path, target_psnr, verbose)
                 saved_paths.append(saved_path)
     elif src_path.is_dir():
-        if dst_path.suffix:
+        # Check if target path has a media file extension
+        if dst_path.suffix.lower() in valid_exts:
             raise ValueError("Target must be a directory when source is a directory")
         files = [
             f for f in src_path.rglob("*") 
