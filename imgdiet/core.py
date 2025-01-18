@@ -4,7 +4,7 @@ import io
 import math
 import shutil
 import numpy as np
-from PIL import Image, ImageOps
+from PIL import Image, ImageOps, UnidentifiedImageError
 from typing import Dict, Optional, Tuple, Union
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
@@ -188,124 +188,128 @@ def process_single_image(
     """
     logger = setup_logger(verbose)
     
-    # 1) Open image with context manager
-    with Image.open(img_path) as pil_image:
-        # Process EXIF rotation
-        pil_image = ImageOps.exif_transpose(pil_image)
-        
-        # 알파 채널 확인
-        has_alpha = pil_image.mode in ('RGBA', 'LA')
-        
-        # RGB 또는 RGBA 모드로 변환 (알파 채널 보존)
-        if pil_image.mode == 'P':
-            pil_image = pil_image.convert('RGBA' if 'transparency' in pil_image.info else 'RGB')
-        elif pil_image.mode not in ('RGB', 'RGBA'):
-            pil_image = pil_image.convert('RGB')
+    try:
+        # 1) Open image with context manager
+        with Image.open(img_path) as pil_image:
+            # Process EXIF rotation
+            pil_image = ImageOps.exif_transpose(pil_image)
+            
+            # 알파 채널 확인
+            has_alpha = pil_image.mode in ('RGBA', 'LA')
+            
+            # RGB 또는 RGBA 모드로 변환 (알파 채널 보존)
+            if pil_image.mode == 'P':
+                pil_image = pil_image.convert('RGBA' if 'transparency' in pil_image.info else 'RGB')
+            elif pil_image.mode not in ('RGB', 'RGBA'):
+                pil_image = pil_image.convert('RGB')
+            else:
+                pil_image = pil_image.copy()
+
+            # ICC 프로파일 변환을 여기로 이동
+            if ImageCms is not None:
+                icc_profile_bytes = pil_image.info.get("icc_profile", None)
+                if icc_profile_bytes:
+                    try:
+                        input_profile = ImageCms.ImageCmsProfile(io.BytesIO(icc_profile_bytes))
+                        srgb_profile = ImageCms.createProfile("sRGB")
+                        transform = ImageCms.buildTransform(
+                            input_profile,
+                            srgb_profile,
+                            "RGB",
+                            "RGB"
+                        )
+                        pil_image = ImageCms.applyTransform(pil_image, transform)
+                        pil_image.info["icc_profile"] = srgb_profile.tobytes()
+                    except Exception as e:
+                        logger.warning(f"Failed to convert ICC profile: {e}")
+            else:
+                logger.warning("ImageCms module not available, skipping ICC conversion")
+
+        # 2) PSNR 계산을 위해 알파 채널 제외하고 BGR로 변환
+        if has_alpha:
+            original_bgr = np.array(pil_image.convert('RGB'))[:, :, ::-1]
         else:
-            pil_image = pil_image.copy()
+            original_bgr = np.array(pil_image)[:, :, ::-1]
 
-        # ICC 프로파일 변환을 여기로 이동
-        if ImageCms is not None:
-            icc_profile_bytes = pil_image.info.get("icc_profile", None)
-            if icc_profile_bytes:
-                try:
-                    input_profile = ImageCms.ImageCmsProfile(io.BytesIO(icc_profile_bytes))
-                    srgb_profile = ImageCms.createProfile("sRGB")
-                    transform = ImageCms.buildTransform(
-                        input_profile,
-                        srgb_profile,
-                        "RGB",
-                        "RGB"
-                    )
-                    pil_image = ImageCms.applyTransform(pil_image, transform)
-                    pil_image.info["icc_profile"] = srgb_profile.tobytes()
-                except Exception as e:
-                    logger.warning(f"Failed to convert ICC profile: {e}")
+        original_size = img_path.stat().st_size
+
+        # 3) Keep folder structure
+        if source_root.is_file():
+            rel_path = img_path.relative_to(source_root.parent)
         else:
-            logger.warning("ImageCms module not available, skipping ICC conversion")
+            rel_path = img_path.relative_to(source_root)
 
-    # 2) PSNR 계산을 위해 알파 채널 제외하고 BGR로 변환
-    if has_alpha:
-        original_bgr = np.array(pil_image.convert('RGB'))[:, :, ::-1]
-    else:
-        original_bgr = np.array(pil_image)[:, :, ::-1]
+        webp_path = target_dir / rel_path.with_suffix(".webp")
 
-    original_size = img_path.stat().st_size
-
-    # 3) Keep folder structure
-    if source_root.is_file():
-        rel_path = img_path.relative_to(source_root.parent)
-    else:
-        rel_path = img_path.relative_to(source_root)
-
-    webp_path = target_dir / rel_path.with_suffix(".webp")
-
-    # Case 1: target_psnr == 0 => lossless
-    if target_psnr == 0:
-        try:
-            psnr_val, compressed_size, data = measure_webp_lossless_pil(original_bgr, pil_image)
-            if psnr_val == float("inf") and compressed_size < original_size:
+        # Case 1: target_psnr == 0 => lossless
+        if target_psnr == 0:
+            try:
+                psnr_val, compressed_size, data = measure_webp_lossless_pil(original_bgr, pil_image)
+                if psnr_val == float("inf") and compressed_size < original_size:
+                    webp_path.parent.mkdir(parents=True, exist_ok=True)
+                    with open(webp_path, "wb") as f:
+                        icc_profile = pil_image.info.get("icc_profile", None)
+                        # lossless 모드로 저장 (원본 모드 유지)
+                        pil_image.save(
+                            f, 
+                            format="WEBP", 
+                            lossless=True, 
+                            icc_profile=icc_profile,
+                            exact=True  # 알파 채널의 정확한 보존을 위해 추가
+                        )
+                    saving_ratio = (1 - compressed_size / original_size) * 100
+                    logger.info(f"Lossless WebP saved for {img_path}")
+                    logger.info(f"PSNR: {psnr_val:.2f} dB")
+                    logger.info(f"Size: {original_size:,} -> {compressed_size:,} bytes")
+                    logger.info(f"Saved: {saving_ratio:.1f}%")
+                    return webp_path
+                else:
+                    logger.warning(f"Lossless compression failed: output is not identical or larger")
+                    logger.warning(f"Original size: {original_size:,} bytes")
+                    logger.warning(f"Lossless WebP size: {compressed_size:,} bytes")
+                    return copy_original(img_path, webp_path.with_suffix(img_path.suffix), verbose)
+            except Exception as e:
+                logger.warning(f"Failed lossless: {e}, copying original.")
+                return copy_original(img_path, webp_path.with_suffix(img_path.suffix), verbose)
+        
+        # Case 2: target_psnr > 0 => binary search
+        best_params = find_optimal_compression_binary_search(original_bgr, pil_image, target_psnr)
+        if best_params is None:
+            logger.warning(f"No quality meets {target_psnr} dB, copying original.")
+            logger.warning(f"Original size: {original_size:,} bytes")
+            return copy_original(img_path, webp_path.with_suffix(img_path.suffix), verbose)
+        else:
+            q = best_params["quality"]
+            logger.info(f"Found best quality={q} for {img_path}")
+            psnr_val, compressed_size, _ = measure_webp_quality_pil(original_bgr, pil_image, q)
+            if compressed_size < original_size:
                 webp_path.parent.mkdir(parents=True, exist_ok=True)
                 with open(webp_path, "wb") as f:
                     icc_profile = pil_image.info.get("icc_profile", None)
-                    # lossless 모드로 저장 (원본 모드 유지)
+                    # quality 모드로 저장 (원본 모드 유지)
                     pil_image.save(
                         f, 
                         format="WEBP", 
-                        lossless=True, 
+                        quality=q, 
                         icc_profile=icc_profile,
                         exact=True  # 알파 채널의 정확한 보존을 위해 추가
                     )
                 saving_ratio = (1 - compressed_size / original_size) * 100
-                logger.info(f"Lossless WebP saved for {img_path}")
+                logger.info(f"WebP saved: {img_path} -> {webp_path}")
                 logger.info(f"PSNR: {psnr_val:.2f} dB")
                 logger.info(f"Size: {original_size:,} -> {compressed_size:,} bytes")
                 logger.info(f"Saved: {saving_ratio:.1f}%")
                 return webp_path
             else:
-                logger.warnning(f"img {img_path} was not compressed by lossless mode.")
-                logger.warning(f"Lossless compression failed: output is not identical or larger")
+                logger.warning(f"Compressed >= original, copying original.")
                 logger.warning(f"Original size: {original_size:,} bytes")
-                logger.warning(f"Lossless WebP size: {compressed_size:,} bytes")
+                logger.warning(f"Compressed size: {compressed_size:,} bytes")
                 return copy_original(img_path, webp_path.with_suffix(img_path.suffix), verbose)
-        except Exception as e:
-            logger.warning(f"Failed lossless: {e}, copying original.")
-            return copy_original(img_path, webp_path.with_suffix(img_path.suffix), verbose)
-        
-    # Case 2: target_psnr > 0 => binary search
-    best_params = find_optimal_compression_binary_search(original_bgr, pil_image, target_psnr)
-    if best_params is None:
-        logger.warning(f"No quality meets {target_psnr} dB, copying original.")
-        logger.warning(f"Original size: {original_size:,} bytes")
-        return copy_original(img_path, webp_path.with_suffix(img_path.suffix), verbose)
-    else:
-        q = best_params["quality"]
-        logger.info(f"Found best quality={q} for {img_path}")
-        psnr_val, compressed_size, _ = measure_webp_quality_pil(original_bgr, pil_image, q)
-        if compressed_size < original_size:
-            webp_path.parent.mkdir(parents=True, exist_ok=True)
-            with open(webp_path, "wb") as f:
-                icc_profile = pil_image.info.get("icc_profile", None)
-                # quality 모드로 저장 (원본 모드 유지)
-                pil_image.save(
-                    f, 
-                    format="WEBP", 
-                    quality=q, 
-                    icc_profile=icc_profile,
-                    exact=True  # 알파 채널의 정확한 보존을 위해 추가
-                )
-            saving_ratio = (1 - compressed_size / original_size) * 100
-            logger.info(f"WebP saved: {img_path} -> {webp_path}")
-            logger.info(f"PSNR: {psnr_val:.2f} dB")
-            logger.info(f"Size: {original_size:,} -> {compressed_size:,} bytes")
-            logger.info(f"Saved: {saving_ratio:.1f}%")
-            return webp_path
-        else:
-            logger.warning(f"img {img_path} was not compressed by quality mode.")
-            logger.warning(f"Compressed >= original, copying original.")
-            logger.warning(f"Original size: {original_size:,} bytes")
-            logger.warning(f"Compressed size: {compressed_size:,} bytes")
-            return copy_original(img_path, webp_path.with_suffix(img_path.suffix), verbose)
+    except (UnidentifiedImageError, OSError) as e:
+        logger.error(f"Failed to open image {img_path}: {str(e)}")
+        return copy_original(img_path, 
+                           target_dir / img_path.relative_to(source_root), 
+                           verbose)
 
 
 def save(
