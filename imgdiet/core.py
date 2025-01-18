@@ -331,7 +331,7 @@ def save(
     valid_exts = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".webp"}
 
     # Add extension check and warning
-    if dst_path.suffix and dst_path.suffix.lower() != '.webp':
+    if dst_path.suffix and dst_path.suffix.lower() in valid_exts and dst_path.suffix.lower() != '.webp':
         logger.warning("Currently only WebP format is supported for output. Forcing .webp extension.")
         dst_path = dst_path.with_suffix('.webp')
 
