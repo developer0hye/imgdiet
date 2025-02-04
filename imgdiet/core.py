@@ -329,7 +329,7 @@ def save(
     logger = setup_logger(verbose)
     src_path = Path(source)
     dst_path = Path(target)
-    valid_exts = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".webp"}
+    valid_exts = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".webp", ".avif"}
 
     # Add extension check and warning
     if dst_path.suffix and dst_path.suffix.lower() in valid_exts and dst_path.suffix.lower() != '.webp':
