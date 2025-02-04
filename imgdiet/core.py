@@ -5,6 +5,7 @@ import math
 import shutil
 import numpy as np
 from PIL import Image, ImageOps, UnidentifiedImageError
+import pillow_avif
 from typing import Dict, Optional, Tuple, Union
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
