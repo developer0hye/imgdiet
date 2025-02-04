@@ -8,7 +8,8 @@ license = { file = "LICENSE" }
 dependencies = [
   "numpy",
   "Pillow",
-  "tqdm"
+  "tqdm",
+  "pillow-avif-plugin"
 ]
 keywords = ["image", "compression", "webp", "psnr"]
 
