@@ -6,6 +6,7 @@ import shutil
 import numpy as np
 from PIL import Image, ImageOps, UnidentifiedImageError
 import pillow_avif
+from typing import Literal
 from typing import Dict, Optional, Tuple, Union
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
@@ -316,6 +317,7 @@ def process_single_image(
 def save(
     source: Union[str, Path],
     target: Union[str, Path],
+    codec: Literal["webp", "avif"],
     target_psnr: float = 40.0,
     verbose: bool = False
 ) -> Tuple[list[Path], list[Path]]:
@@ -324,6 +326,10 @@ def save(
     with a target PSNR or lossless if target_psnr=0. 
     Returns a tuple of (source_paths, target_paths).
     """
+    
+    if codec not in ['webp', 'avif']:
+        raise ValueError("Invalid codec. Please choose 'webp' or 'avif'.")
+    
     start_time = time.time()
 
     logger = setup_logger(verbose)
@@ -332,16 +338,16 @@ def save(
     valid_exts = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".webp", ".avif"}
 
     # Add extension check and warning
-    if dst_path.suffix and dst_path.suffix.lower() in valid_exts and dst_path.suffix.lower() != '.webp':
-        logger.warning("Currently only WebP format is supported for output. Forcing .webp extension.")
-        dst_path = dst_path.with_suffix('.webp')
+    if dst_path.suffix and dst_path.suffix.lower() in valid_exts and dst_path.suffix.lower() not in ['.webp', '.avif']:
+        logger.warning("Currently only WebP or AVIF format is supported for output. Forcing .webp or .avif extension.")
+        dst_path = dst_path.with_suffix('.webp') if codec == 'webp' else dst_path.with_suffix('.avif')
 
     source_paths = []
     saved_paths = []
     
     if src_path.is_file():
         source_paths.append(src_path)
-        if src_path.suffix.lower() == '.webp':
+        if src_path.suffix.lower() in ['.webp', '.avif']:
             if dst_path.suffix:  # target이 파일 경로인 경우
                 saved_path = copy_original(src_path, dst_path, verbose)
             else:  # target이 디렉토리인 경우
@@ -373,7 +379,7 @@ def save(
                 executor.map(
                     lambda p: (
                         copy_original(p, dst_path / p.relative_to(src_path), verbose)
-                        if p.suffix.lower() == '.webp'
+                        if p.suffix.lower() in ['.webp', '.avif']
                         else process_single_image(p, src_path, dst_path, target_psnr, verbose)
                     ),
                     files

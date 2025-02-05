@@ -11,18 +11,21 @@ class CustomArgumentParser(argparse.ArgumentParser):
 
 def main():
     parser = CustomArgumentParser(
-        description="Compress images to WebP, preserving folder structure.",
+        description="Compress images to WebP(Default) or AVIF, preserving folder structure.",
         epilog=(
             "Example usage:\n"
             "  imgdiet --source <input_path> --target <output_path> [--psnr <value>] [--verbose]\n"
             "  imgdiet --source image.png --target compressed_image.webp --psnr 40.0\n"
             "  imgdiet --source ./images/image.png --target ./compressed_images/ --psnr 40.0\n"
             "  imgdiet --source ./images --target ./compressed_images --psnr 40.0 --verbose"
+            "  imgdiet --source ./images --target ./compressed_images --codec avif --psnr 40.0 --verbose"
+            "  imgdiet --source ./images --target ./compressed_images --codec webp --psnr 40.0 --verbose"
         ),
         formatter_class=argparse.RawTextHelpFormatter
     )
     parser.add_argument("--source", required=True, help="Path to an image or directory.")
     parser.add_argument("--target", required=True, help="Path to an image or directory.")
+    parser.add_argument("--codec", default="webp", help="Codec to use for compression. (webp, avif)", choices=["webp", "avif"])
     parser.add_argument("--psnr", type=float, default=40.0, help="Target PSNR (0=lossless, higher=better quality, larger size).")
     parser.add_argument("--verbose", action="store_true", help="Enable verbose logging.")
 
@@ -31,6 +34,7 @@ def main():
     save(
         source=Path(args.source),
         target=Path(args.target),
+        codec=args.codec,
         target_psnr=args.psnr,
         verbose=args.verbose
     )
