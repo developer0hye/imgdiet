@@ -337,6 +337,10 @@ def save(
     dst_path = Path(target)
     valid_exts = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".webp", ".avif"}
 
+    # Check extension is same with codec
+    if dst_path.suffix.lower() != f".{codec}":
+        raise ValueError(f"Codec and target extension are not same. {dst_path.suffix} != {codec}")
+
     # Add extension check and warning
     if dst_path.suffix and dst_path.suffix.lower() in valid_exts and dst_path.suffix.lower() not in ['.webp', '.avif']:
         logger.warning("Currently only WebP or AVIF format is supported for output. Forcing .webp or .avif extension.")
