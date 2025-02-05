@@ -317,7 +317,7 @@ def process_single_image(
 def save(
     source: Union[str, Path],
     target: Union[str, Path],
-    codec: Literal["webp", "avif"],
+    codec: Literal["webp", "avif"] = "webp",
     target_psnr: float = 40.0,
     verbose: bool = False
 ) -> Tuple[list[Path], list[Path]]:
