@@ -83,9 +83,13 @@ jobs:
         # CLI 테스트를 위한 새 디렉토리 생성
         rm -rf test_output
         mkdir -p test_output
+
+        # CLI로 이미지 변환 실행 - target folder case
+        imgdiet --source assets/20250105_164724.png --target ./test_output --psnr 40.0
         
-        # CLI로 이미지 변환 실행
+        # CLI로 이미지 변환 실행 - target file case
         imgdiet --source assets/20250105_164724.png --target test_output/output.webp --psnr 40.0
+
         
         # 결과 검증
         python -c '
