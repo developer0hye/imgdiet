@@ -14,6 +14,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - name: Debug head_branch
+      run: echo "head_branch: ${{ github.event.workflow_run.head_branch }}"
+      
     - name: Check out code
       uses: actions/checkout@v4
 
