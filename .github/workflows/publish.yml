@@ -3,6 +3,8 @@ name: Publish to PyPI
 on:
   workflow_run:
     workflows: ["CI"] # 'ci.yaml' 워크플로 이름
+    branches:
+      - main
     types:
       - completed
 
