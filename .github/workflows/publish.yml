@@ -10,7 +10,7 @@ on:
 
 jobs:
   publish:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }} # CI 성공 시에만 실행
+    if: ${{ github.ref == 'refs/heads/main' && github.event.workflow_run.conclusion == 'success' }} # CI 성공 시에만 실행
     runs-on: ubuntu-latest
 
     steps:
