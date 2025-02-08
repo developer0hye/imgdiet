@@ -3,12 +3,14 @@ name: Publish to PyPI
 on:
   workflow_run:
     workflows: ["CI"] # 'ci.yaml' 워크플로 이름
+    branches:
+      - main
     types:
       - completed
 
 jobs:
   publish:
-    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' }} # CI 성공 시에만 실행
+    if: ${{ github.event.workflow_run.conclusion == 'success' }} # CI 성공 시에만 실행
     runs-on: ubuntu-latest
 
     steps:
