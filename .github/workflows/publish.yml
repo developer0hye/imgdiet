@@ -10,13 +10,10 @@ on:
 
 jobs:
   publish:
-    if: ${{ github.event.workflow_run.head_branch == 'main' && github.event.workflow_run.conclusion == 'success' }} # CI 성공 시에만 실행
+    if: ${{ github.event.workflow_run.conclusion == 'success' }} # CI 성공 시에만 실행
     runs-on: ubuntu-latest
 
     steps:
-    - name: Debug head_branch
-      run: echo "head_branch: ${{ github.event.workflow_run.head_branch }}"
-      
     - name: Check out code
       uses: actions/checkout@v4
 
