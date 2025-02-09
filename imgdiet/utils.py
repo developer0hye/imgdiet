@@ -24,6 +24,8 @@ def calculate_psnr(
     compressed_bgr: np.ndarray
 ) -> float:
     """
+    TODO: support various bit depth
+
     Calculates PSNR (Peak Signal-to-Noise Ratio) in dB.
     Returns float('inf') if images are identical.
     """
