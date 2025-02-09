@@ -1,7 +1,5 @@
-import os
 import time
 import io
-import math
 import shutil
 import numpy as np
 from PIL import Image, ImageOps, UnidentifiedImageError
@@ -12,27 +10,12 @@ from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 from tqdm import tqdm
 from imgdiet.utils import setup_logger
+from imgdiet.utils import calculate_psnr
 
 try:
     from PIL import ImageCms
 except ImportError:
     ImageCms = None
-
-
-def calculate_psnr(
-    original_bgr: np.ndarray,
-    compressed_bgr: np.ndarray
-) -> float:
-    """
-    Calculates PSNR (Peak Signal-to-Noise Ratio) in dB.
-    Returns float('inf') if images are identical.
-    """
-    mse = float(np.mean((original_bgr - compressed_bgr) ** 2))
-    if mse == 0:
-        return float('inf')
-    max_pixel = 255.0
-    return 20.0 * math.log10(max_pixel / math.sqrt(mse))
-
 
 def measure_webp_pil(
     original_bgr: np.ndarray,
