@@ -1,5 +1,8 @@
 import logging
-import numpy as np
+import numpy as np  
+import shutil
+from pathlib import Path
+from typing import Union
 
 def setup_logger(verbose: bool) -> logging.Logger:
     """Configure and return a logger with appropriate level"""
@@ -18,6 +21,27 @@ def setup_logger(verbose: bool) -> logging.Logger:
     logger.setLevel(logging.INFO if verbose else logging.WARNING)
     return logger
 
+
+def copy_original(
+    src: Union[str, Path],
+    dst: Union[str, Path],
+    verbose: bool = False
+) -> Path:
+    """
+    Copies the original file from src to dst.
+    If src and dst are the same, skip copying.
+    Returns the destination path.
+    """
+    logger = setup_logger(verbose)
+    src, dst = Path(src), Path(dst)
+    if src.resolve() == dst.resolve():
+        logger.info(f"Source and destination are same, skipping: {src}")
+        return dst
+        
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    logger.info(f"Copying original: {src} -> {dst}")
+    shutil.copy2(src, dst)
+    return dst
 
 def calculate_psnr(
     original_bgr: np.ndarray,

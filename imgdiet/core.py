@@ -1,6 +1,5 @@
 import time
 import io
-import shutil
 import numpy as np
 from PIL import Image, ImageOps, UnidentifiedImageError
 import pillow_avif
@@ -9,8 +8,7 @@ from typing import Dict, Optional, Tuple, Union
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 from tqdm import tqdm
-from imgdiet.utils import setup_logger
-from imgdiet.utils import calculate_psnr
+from imgdiet.utils import setup_logger, copy_original, calculate_psnr
 
 try:
     from PIL import ImageCms
@@ -97,28 +95,6 @@ def find_optimal_compression_binary_search(
         "psnr": best_psnr,
         "size": int(best_size)
     }
-
-
-def copy_original(
-    src: Union[str, Path],
-    dst: Union[str, Path],
-    verbose: bool = False
-) -> Path:
-    """
-    Copies the original file from src to dst.
-    If src and dst are the same, skip copying.
-    Returns the destination path.
-    """
-    logger = setup_logger(verbose)
-    src, dst = Path(src), Path(dst)
-    if src.resolve() == dst.resolve():
-        logger.info(f"Source and destination are same, skipping: {src}")
-        return dst
-        
-    dst.parent.mkdir(parents=True, exist_ok=True)
-    logger.info(f"Copying original: {src} -> {dst}")
-    shutil.copy2(src, dst)
-    return dst
 
 
 def process_single_image(
