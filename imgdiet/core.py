@@ -8,7 +8,7 @@ from typing import Dict, Optional, Tuple, Union
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 from tqdm import tqdm
-from imgdiet.utils import setup_logger, copy_original
+from imgdiet.utils import setup_logger, copy_original, measure_time
 from imgdiet.codec import measure_webp_pil
 try:
     from PIL import ImageCms
@@ -190,7 +190,7 @@ def process_single_image(
                            target_dir / img_path.relative_to(source_root), 
                            verbose)
 
-
+@measure_time
 def save(
     source: Union[str, Path],
     target: Union[str, Path],
@@ -207,11 +207,10 @@ def save(
     if codec not in ['webp', 'avif']:
         raise ValueError("Invalid codec. Please choose 'webp' or 'avif'.")
     
-    start_time = time.time()
-
     logger = setup_logger(verbose)
     src_path = Path(source)
     dst_path = Path(target)
+    dst_path.mkdir(parents=True, exist_ok=True)
     valid_exts = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".webp", ".avif"}
 
     # Check extension is same with codec
@@ -271,9 +270,6 @@ def save(
             ))
     else:
         raise ValueError(f"Invalid source path: {source}")
-    
-    end_time = time.time()
-    logger.info(f"Total time taken: {end_time - start_time:.2f} seconds")
     
     # Assert that source and target lists have same length
     assert len(source_paths) == len(saved_paths), "Source and target path lists must have same length"

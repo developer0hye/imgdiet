@@ -1,6 +1,7 @@
 import logging
 import numpy as np  
 import shutil
+import time
 from pathlib import Path
 from typing import Union
 
@@ -21,6 +22,20 @@ def setup_logger(verbose: bool) -> logging.Logger:
     logger.setLevel(logging.INFO if verbose else logging.WARNING)
     return logger
 
+def measure_time(func):
+    """
+    Decorator to measure execution time of a function and log it.
+    """
+    def wrapper(*args, verbose=False, **kwargs):
+        start_time = time.time()
+        result = func(*args, verbose=verbose, **kwargs)
+        end_time = time.time()
+        
+        logger = setup_logger(verbose)
+        logger.info(f"Total time taken: {end_time - start_time:.2f} seconds")
+        
+        return result
+    return wrapper
 
 def copy_original(
     src: Union[str, Path],
