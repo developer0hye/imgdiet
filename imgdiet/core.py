@@ -204,52 +204,43 @@ def save(
     Returns a tuple of (source_paths, target_paths).
     """
     
-    if codec not in ['webp', 'avif']:
-        raise ValueError("Invalid codec. Please choose 'webp' or 'avif'.")
+    SUPPORTED_TARGET_CODECS = [".webp", ".avif"]
+    VALID_SOURCE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff"] + SUPPORTED_TARGET_CODECS
+    
+    if f".{codec}" not in SUPPORTED_TARGET_CODECS:
+        raise ValueError(f"Invalid codec. Please choose {SUPPORTED_TARGET_CODECS}.")
     
     logger = setup_logger(verbose)
     src_path = Path(source)
     dst_path = Path(target)
-    valid_exts = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".webp", ".avif"}
 
-    if src_path.is_file():        
-        # case 1 src_path is file and dst_path is file
-
-        # case 2 src_path is file and dst_path is dir
-
-        pass
-    elif src_path.is_dir():
-        # case 1 src_path is dir and dst_path is file
-
-        # case 2 src_path is dir and dst_path is dir
-
-        pass
-    else:
-        raise ValueError(f"Invalid source path: {source}")
-    
     # Check extension is same with codec
-    if dst_path.suffix and not dst_path.is_dir():
+    if dst_path.suffix:
         if dst_path.suffix.lower() != f".{codec}":
-            raise ValueError(f"Codec and target extension are not same. {dst_path.suffix} != {codec}")
+            logger.warning(f"Target {dst_path} has suffix {dst_path.suffix}. imgdiet will treat it as a directory.")
+            dst_path.mkdir(parents=True, exist_ok=True)
+    else:
+        dst_path.mkdir(parents=True, exist_ok=True)
 
     # Add extension check and warning
-    if dst_path.suffix and dst_path.suffix.lower() in valid_exts and dst_path.suffix.lower() not in ['.webp', '.avif']:
-        logger.warning("Currently only WebP or AVIF format is supported for output. Forcing .webp or .avif extension.")
+    if dst_path.suffix and dst_path.suffix.lower() in VALID_SOURCE_EXTENSIONS and dst_path.suffix.lower() not in SUPPORTED_TARGET_CODECS:
+        logger.warning(f"Currently only {SUPPORTED_TARGET_CODECS} format is supported for output. Forcing one of them.")
         dst_path = dst_path.with_suffix('.webp') if codec == 'webp' else dst_path.with_suffix('.avif')
+        logger.warning(f"Forced to {dst_path.suffix} for output.")
 
     source_paths = []
     saved_paths = []
     
     if src_path.is_file():
         source_paths.append(src_path)
-        if src_path.suffix.lower() in ['.webp', '.avif']:
-            if dst_path.suffix:  # target이 파일 경로인 경우
+        if src_path.suffix.lower() in SUPPORTED_TARGET_CODECS:
+            if not dst_path.is_dir():  # target이 파일 경로인 경우
                 saved_path = copy_original(src_path, dst_path, verbose)
             else:  # target이 디렉토리인 경우
                 saved_path = copy_original(src_path, dst_path / src_path.name, verbose)
             saved_paths.append(saved_path)
         else:
-            if dst_path.suffix:  # If target is a file path
+            if not dst_path.is_dir():  # If target is a file path
                 saved_path = process_single_image(src_path, src_path, dst_path.parent, target_psnr, verbose)
                 # Rename the output file to match the target filename
                 if saved_path.exists():
@@ -260,11 +251,11 @@ def save(
                 saved_paths.append(saved_path)
     elif src_path.is_dir():
         # Check if target path has a media file extension
-        if dst_path.suffix.lower() in valid_exts:
+        if dst_path.suffix.lower() in VALID_SOURCE_EXTENSIONS:
             raise ValueError("Target must be a directory when source is a directory")
         files = [
             f for f in src_path.rglob("*") 
-            if f.is_file() and f.suffix.lower() in valid_exts
+            if f.is_file() and f.suffix.lower() in VALID_SOURCE_EXTENSIONS
         ]
         source_paths.extend(files)
         logger.info(f"Found {len(files)} images. Starting processing...")
@@ -274,7 +265,7 @@ def save(
                 executor.map(
                     lambda p: (
                         copy_original(p, dst_path / p.relative_to(src_path), verbose)
-                        if p.suffix.lower() in ['.webp', '.avif']
+                        if p.suffix.lower() in SUPPORTED_TARGET_CODECS
                         else process_single_image(p, src_path, dst_path, target_psnr, verbose)
                     ),
                     files
