@@ -210,9 +210,23 @@ def save(
     logger = setup_logger(verbose)
     src_path = Path(source)
     dst_path = Path(target)
-    dst_path.mkdir(parents=True, exist_ok=True)
     valid_exts = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".webp", ".avif"}
 
+    if src_path.is_file():        
+        # case 1 src_path is file and dst_path is file
+
+        # case 2 src_path is file and dst_path is dir
+
+        pass
+    elif src_path.is_dir():
+        # case 1 src_path is dir and dst_path is file
+
+        # case 2 src_path is dir and dst_path is dir
+
+        pass
+    else:
+        raise ValueError(f"Invalid source path: {source}")
+    
     # Check extension is same with codec
     if dst_path.suffix and not dst_path.is_dir():
         if dst_path.suffix.lower() != f".{codec}":
