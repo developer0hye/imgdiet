@@ -214,6 +214,9 @@ def save(
     src_path = Path(source)
     dst_path = Path(target)
 
+    if not src_path.is_dir() and not src_path.is_file():
+        raise ValueError(f"Invalid source path: {source}")
+
     # Check extension is same with codec
     if dst_path.suffix:
         if dst_path.suffix.lower() != f".{codec}":
@@ -273,8 +276,6 @@ def save(
                 total=len(files),
                 desc="Processing images"
             ))
-    else:
-        raise ValueError(f"Invalid source path: {source}")
     
     # Assert that source and target lists have same length
     assert len(source_paths) == len(saved_paths), "Source and target path lists must have same length"
