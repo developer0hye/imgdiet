@@ -117,15 +117,15 @@ def process_single_image(
         else:
             rel_path = img_path.relative_to(source_root)
 
-        webp_path = target_dir / rel_path.with_suffix(".webp")
+        saved_path = target_dir / rel_path.with_suffix(".webp")
 
         # Case 1: target_psnr == 0 => lossless
         if target_psnr == 0:
             try:
                 psnr_val, compressed_size, data = measure_webp_pil(original_bgr, pil_image, lossless=True)
                 if psnr_val == float("inf") and compressed_size < original_size:
-                    webp_path.parent.mkdir(parents=True, exist_ok=True)
-                    with open(webp_path, "wb") as f:
+                    saved_path.parent.mkdir(parents=True, exist_ok=True)
+                    with open(saved_path, "wb") as f:
                         icc_profile = pil_image.info.get("icc_profile", None)
                         # lossless 모드로 저장 (원본 모드 유지)
                         pil_image.save(
@@ -140,30 +140,29 @@ def process_single_image(
                     logger.info(f"PSNR: {psnr_val:.2f} dB")
                     logger.info(f"Size: {original_size:,} -> {compressed_size:,} bytes")
                     logger.info(f"Saved: {saving_ratio:.1f}%")
-                    return webp_path
+                    return saved_path
                 else:
                     logger.warning(f"Lossless compression failed: output is not identical or larger")
                     logger.warning(f"Original size: {original_size:,} bytes")
                     logger.warning(f"Lossless WebP size: {compressed_size:,} bytes")
-                    return copy_original(img_path, webp_path.with_suffix(img_path.suffix), verbose)
+                    return copy_original(img_path, saved_path.with_suffix(img_path.suffix), verbose)
             except Exception as e:
                 logger.warning(f"Failed lossless: {e}, copying original.")
-                return copy_original(img_path, webp_path.with_suffix(img_path.suffix), verbose)
+                return copy_original(img_path, saved_path.with_suffix(img_path.suffix), verbose)
         
         # Case 2: target_psnr > 0 => binary search
         best_params = find_optimal_compression_binary_search(original_bgr, pil_image, target_psnr)
         if best_params is None:
             logger.warning(f"No quality meets {target_psnr} dB, copying original.")
             logger.warning(f"Original size: {original_size:,} bytes")
-            return copy_original(img_path, webp_path.with_suffix(img_path.suffix), verbose)
+            return copy_original(img_path, saved_path.with_suffix(img_path.suffix), verbose)
         else:
             q = best_params["quality"]
             logger.info(f"Found best quality={q} for {img_path}")
             psnr_val, compressed_size, _ = measure_webp_pil(original_bgr, pil_image, quality=q, lossless=False)
             if compressed_size < original_size:
-                webp_path.parent.mkdir(parents=True, exist_ok=True)
-                with open(webp_path, "wb") as f:
-
+                saved_path.parent.mkdir(parents=True, exist_ok=True)
+                with open(saved_path, "wb") as f:
                     icc_profile = pil_image.info.get("icc_profile", None)
                     # quality 모드로 저장 (원본 모드 유지)
                     pil_image.save(
@@ -174,16 +173,16 @@ def process_single_image(
                         exact=True  # 알파 채널의 정확한 보존을 위해 추가
                     )
                 saving_ratio = (1 - compressed_size / original_size) * 100
-                logger.info(f"WebP saved: {img_path} -> {webp_path}")
+                logger.info(f"WebP saved: {img_path} -> {saved_path}")
                 logger.info(f"PSNR: {psnr_val:.2f} dB")
                 logger.info(f"Size: {original_size:,} -> {compressed_size:,} bytes")
                 logger.info(f"Saved: {saving_ratio:.1f}%")
-                return webp_path
+                return saved_path
             else:
                 logger.warning(f"Compressed >= original, copying original.")
                 logger.warning(f"Original size: {original_size:,} bytes")
                 logger.warning(f"Compressed size: {compressed_size:,} bytes")
-                return copy_original(img_path, webp_path.with_suffix(img_path.suffix), verbose)
+                return copy_original(img_path, saved_path.with_suffix(img_path.suffix), verbose)
     except (UnidentifiedImageError, OSError) as e:
         logger.error(f"Failed to open image {img_path}: {str(e)}")
         return copy_original(img_path, 
