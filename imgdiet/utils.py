@@ -52,7 +52,10 @@ def copy_original(
     if src.resolve() == dst.resolve():
         logger.info(f"Source and destination are same, skipping: {src}")
         return dst
-        
+    
+    if dst.is_dir():
+        dst = dst / src.name
+
     dst.parent.mkdir(parents=True, exist_ok=True)
     logger.info(f"Copying original: {src} -> {dst}")
     shutil.copy2(src, dst)
