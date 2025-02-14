@@ -237,7 +237,7 @@ def save(
     if src_path.is_file():
         source_paths.append(src_path)
         if src_path.suffix.lower() in SUPPORTED_TARGET_CODECS:
-            saved_path = copy_original(src_path, dst_path / src_path.name, verbose)
+            saved_path = copy_original(src_path, dst_path, verbose)
             saved_paths.append(saved_path)
         else:
             if not dst_path.is_dir():  # If target is a file path
